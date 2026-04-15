@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Recruitment DSS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────── -->
+<nav class="navbar">
+  <a class="navbar-brand" href="#">AI <span>Recruitment DSS</span></a>
+  <ul class="navbar-nav">
+    <li>
+      <button class="nav-link active" id="nav-sessions"
+        onclick="showPage('sessions');loadSessions()">
+        Sessions
+      </button>
+    </li>
+    <li>
+      <button class="nav-link" id="nav-upload"
+        onclick="if(currentSessionId){showPage('upload')}else{alert('Pilih session dulu!')}">
+        Upload CV
+      </button>
+    </li>
+    <li>
+      <button class="nav-link" id="nav-ranking"
+        onclick="if(currentSessionId){showPage('ranking');loadRanking(currentSessionId)}else{alert('Pilih session dulu!')}">
+        Ranking
+      </button>
+    </li>
+  </ul>
+</nav>
+
+<!-- ── CONTAINER ───────────────────────────────────── -->
+<div class="container">
+
+  <!-- ════════════════════════════════════════════════
+       HALAMAN 1: SESSIONS
+  ════════════════════════════════════════════════ -->
+  <div class="page active" id="page-sessions">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Recruitment Sessions</div>
+        <div class="page-subtitle">Kelola semua sesi rekrutmen aktif</div>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        + Buat Session Baru
+      </button>
+    </div>
+
+    <div id="alert-sessions"></div>
+
+    <div class="sessions-grid" id="sessions-grid">
+      <p style="color:var(--text-muted)">Memuat...</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       HALAMAN 2: UPLOAD CV
+  ════════════════════════════════════════════════ -->
+  <div class="page" id="page-upload">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Upload CV Kandidat</div>
+        <div class="page-subtitle">
+          Session: <strong id="upload-session-name">-</strong>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:8px"
+            id="upload-session-id-display"></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="showPage('sessions')">
+          ← Kembali
+        </button>
+        <button class="btn btn-success"
+          onclick="goToRanking(currentSessionId, currentSessionName)">
+          Lihat Ranking →
+        </button>
+      </div>
+    </div>
+
+    <div id="alert-upload"></div>
+
+    <!-- Drop Zone -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Tambah CV</div>
+        <span style="font-size:12px;color:var(--text-muted)">Format: PDF • Bisa bulk upload</span>
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-zone-icon">📂</div>
+        <div class="drop-zone-text">Klik atau drag & drop file PDF di sini</div>
+        <div class="drop-zone-hint">Bisa pilih banyak file sekaligus</div>
+      </div>
+      <input type="file" id="cv-file-input" accept=".pdf" multiple style="display:none">
+    </div>
+
+    <!-- Upload Queue -->
+    <div id="upload-queue"></div>
+
+    <!-- Daftar Kandidat -->
+    <div class="card" style="margin-top:24px">
+      <div class="card-header">
+        <div class="card-title">Kandidat dalam Session</div>
+        <button class="btn btn-outline btn-sm"
+          onclick="loadCandidates(currentSessionId)">
+          Refresh
+        </button>
+      </div>
+      <div id="candidates-list">
+        <p style="color:var(--text-muted);font-size:13px">Pilih session untuk melihat kandidat.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════
+       HALAMAN 3: RANKING
+  ════════════════════════════════════════════════ -->
+  <div class="page" id="page-ranking">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Ranking Kandidat</div>
+        <div class="page-subtitle">
+          Session: <strong id="ranking-session-name">-</strong>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline"
+          onclick="goToUpload(currentSessionId, currentSessionName)">
+          ← Upload CV
+        </button>
+        <button class="btn btn-primary" id="btn-run-saw" onclick="runSAW()">
+          Hitung Ranking SAW
+        </button>
+      </div>
+    </div>
+
+    <!-- Info bobot SAW -->
+    <div class="card" style="background:#eef2ff;border-color:#c7d2fe;margin-bottom:20px">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
+        <div>
+          <span style="color:var(--text-muted)">Metode:</span>
+          <strong style="color:#3730a3;margin-left:6px">SAW (Simple Additive Weighting)</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted)">Bobot Education:</span>
+          <strong style="color:#3730a3;margin-left:6px">30%</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted)">Bobot Experience:</span>
+          <strong style="color:#3730a3;margin-left:6px">40%</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted)">Bobot Skill:</span>
+          <strong style="color:#3730a3;margin-left:6px">30%</strong>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert-ranking"></div>
+
+    <div class="card">
+      <div id="ranking-table">
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-text">Pilih session terlebih dahulu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ── MODAL: BUAT SESSION ──────────────────────────── -->
+<div class="modal-overlay" id="modal-create"
+  onclick="if(event.target===this)closeCreateModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Buat Session Baru</div>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <form id="form-create-session" onsubmit="submitCreateSession(event)">
+      <div class="form-group">
+        <label class="form-label">Judul Session *</label>
+        <input type="text" class="form-control" id="session-title"
+          placeholder="cth: Rekrutmen Software Engineer Q3 2025" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Posisi / Jabatan *</label>
+        <input type="text" class="form-control" id="session-position"
+          placeholder="cth: Backend Developer" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Deskripsi</label>
+        <textarea class="form-control" id="session-desc"
+          placeholder="Deskripsi singkat tentang kebutuhan posisi ini..."></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+        <button type="button" class="btn btn-outline"
+          onclick="closeCreateModal()">Batal</button>
+        <button type="submit" class="btn btn-primary" id="btn-create-session">
+          Buat Session
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

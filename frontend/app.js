@@ -22,10 +22,31 @@ function goToUpload(sessionId, sessionTitle) {
   showPage("upload");
 }
 
-function goToRanking(sessionId, sessionTitle) {
+async function goToRanking(sessionId, sessionTitle) {
   currentSessionId   = sessionId;
   currentSessionName = sessionTitle;
   document.getElementById("ranking-session-name").textContent = sessionTitle;
+
+  // Fetch bobot AHP untuk ditampilkan di info card
+  try {
+    const res = await apiFetch(`/ahp/${sessionId}`);
+    if (res.success && res.data) {
+      const d = res.data;
+      document.getElementById("w-edu").textContent   = (d.weight_education  * 100).toFixed(2) + "%";
+      document.getElementById("w-exp").textContent   = (d.weight_experience * 100).toFixed(2) + "%";
+      document.getElementById("w-skill").textContent = (d.weight_skill      * 100).toFixed(2) + "%";
+      document.getElementById("w-source").textContent = "AHP ✅";
+    } else {
+      // AHP belum diisi, tampilkan bobot default
+      document.getElementById("w-edu").textContent   = "30% (default)";
+      document.getElementById("w-exp").textContent   = "40% (default)";
+      document.getElementById("w-skill").textContent = "30% (default)";
+      document.getElementById("w-source").textContent = "Default ⚠️";
+    }
+  } catch(e) {
+    document.getElementById("w-source").textContent = "Gagal memuat";
+  }
+
   loadRanking(sessionId);
   showPage("ranking");
 }
@@ -360,8 +381,134 @@ async function loadCandidates(sessionId) {
   }
 }
 
+// ══════════════════════════════════════════════════
+// HALAMAN 3: AHP
+// ══════════════════════════════════════════════════
+
+const saatyLabels = {
+  "1":"Sama penting", "2":"Antara sama dan sedikit lebih penting",
+  "3":"Sedikit lebih penting", "4":"Antara sedikit dan lebih penting",
+  "5":"Lebih penting", "6":"Antara lebih dan sangat lebih penting",
+  "7":"Sangat lebih penting", "8":"Antara sangat dan mutlak lebih penting",
+  "9":"Mutlak lebih penting"
+};
+
+// Update deskripsi di bawah tiap perbandingan
+function updateComparison(num) {
+  const left = document.getElementById(`ahp-left-${num}`).value;
+  const val  = document.getElementById(`ahp-val-${num}`).value;
+  const desc = document.getElementById(`ahp-desc-${num}`);
+  const labelMap = {1:["edu","exp"], 2:["edu","skill"], 3:["exp","skill"]};
+  const nameMap  = {edu:"Education", exp:"Experience", skill:"Skill"};
+  const [a, b]   = labelMap[num];
+  const winner   = left;
+  const loser    = winner === a ? b : a;
+  desc.textContent = val === "1"
+    ? `${nameMap[a]} dan ${nameMap[b]} sama penting`
+    : `${nameMap[winner]} ${saatyLabels[val].toLowerCase()} dari ${nameMap[loser]}`;
+}
+
+async function loadAHP(sessionId) {
+  document.getElementById("ahp-session-name").textContent = currentSessionName;
+  // Inisialisasi deskripsi awal
+  updateComparison(1); updateComparison(2); updateComparison(3);
+
+  // Cek apakah sudah ada AHP tersimpan
+  try {
+    const res = await apiFetch(`/ahp/${sessionId}`);
+    if (res.success && res.data) {
+      renderAHPResult(res.data);
+    }
+  } catch(e) {}
+}
+
+async function submitAHP() {
+  const btn = document.getElementById("btn-calc-ahp");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Menghitung...`;
+
+  // Baca nilai dari form dan konversi ke nilai matriks AHP
+  function getVal(num) {
+    const left = document.getElementById(`ahp-left-${num}`).value;
+    const val  = parseFloat(document.getElementById(`ahp-val-${num}`).value);
+    const pairs = {1:["edu","exp"], 2:["edu","skill"], 3:["exp","skill"]};
+    const [a]  = pairs[num];
+    // Jika yang dipilih adalah elemen pertama (a), nilainya positif
+    // Jika yang dipilih adalah elemen kedua, nilainya dibalik (1/val)
+    return left === a ? val : 1 / val;
+  }
+
+  const payload = {
+    session_id:   currentSessionId,
+    edu_vs_exp:   getVal(1),
+    edu_vs_skill: getVal(2),
+    exp_vs_skill: getVal(3)
+  };
+
+  try {
+    const res = await apiFetch("/ahp/calculate", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    renderAHPResult(res);
+    if (res.warning) {
+      showAlert("alert-ahp", "danger", "⚠️ " + res.warning);
+    } else {
+      showAlert("alert-ahp", "success", "Bobot AHP berhasil dihitung dan disimpan!");
+    }
+  } catch(e) {
+    showAlert("alert-ahp", "danger", "Gagal menghitung AHP: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Hitung Bobot AHP";
+  }
+}
+
+function renderAHPResult(data) {
+  // Normalisasi format (bisa dari POST response atau GET response)
+  const weights = data.weights || {
+    education:  data.weight_education,
+    experience: data.weight_experience,
+    skill:      data.weight_skill
+  };
+  const cr          = data.consistency_ratio;
+  const isConsistent = data.is_consistent;
+
+  document.getElementById("ahp-result").style.display = "block";
+  document.getElementById("ahp-cr-badge").innerHTML =
+    `<span class="badge ${isConsistent ? 'badge-success' : 'badge-danger'}">
+      CR = ${cr.toFixed(4)} ${isConsistent ? '✅ Konsisten' : '❌ Tidak Konsisten'}
+    </span>`;
+
+  const rows = [
+    {label:"Education",  val:weights.education,  color:"#4f46e5"},
+    {label:"Experience", val:weights.experience, color:"#059669"},
+    {label:"Skill",      val:weights.skill,      color:"#d97706"}
+  ];
+
+  document.getElementById("ahp-result-content").innerHTML = `
+    ${rows.map(r => `
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <strong>${r.label}</strong>
+          <span>${(r.val*100).toFixed(2)}%</span>
+        </div>
+        <div class="score-bar-bg" style="height:10px">
+          <div class="score-bar-fill"
+            style="width:${(r.val*100).toFixed(1)}%;background:${r.color};height:10px">
+          </div>
+        </div>
+      </div>`).join("")}
+    <p style="font-size:12px;color:var(--text-muted);margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+      Bobot ini akan digunakan secara otomatis saat menghitung ranking SAW.
+      Untuk menggunakannya, pergi ke halaman <strong>Ranking</strong> dan klik <strong>Hitung Ranking SAW</strong>.
+    </p>`;
+}
+
 // ═══════════════════════════════════════════════════════
-// HALAMAN 3: RANKING
+// HALAMAN 4: RANKING
 // ═══════════════════════════════════════════════════════
 
 async function runSAW() {

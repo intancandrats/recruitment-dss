@@ -6,6 +6,7 @@ from database import get_supabase
 from routers.sessions   import router as sessions_router
 from routers.candidates import router as candidates_router
 from routers.ranking    import router as ranking_router
+from routers.ahp import router as ahp_router
 
 app = FastAPI(
     title="AI Recruitment DSS",
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(sessions_router)
 app.include_router(candidates_router)
 app.include_router(ranking_router)
+app.include_router(ahp_router)
 
 @app.get("/")
 def root():

@@ -1,46 +1,19 @@
 from config import SAW_WEIGHTS
 
-def calculate_saw(candidates: list) -> list:
+def calculate_saw(candidates: list, weights: dict = None) -> list:
     """
-    Menghitung ranking kandidat menggunakan metode SAW.
-
-    Parameter:
-        candidates: list dict kandidat dari Supabase, format:
-            [
-                {
-                    "id": "uuid",
-                    "name": "Nama",
-                    "email": "email@x.com",
-                    "candidate_scores": [
-                        {
-                            "education_score": 80,
-                            "experience_score": 85,
-                            "skill_score": 95
-                        }
-                    ]
-                },
-                ...
-            ]
-
-    Return:
-        list dict ranking yang sudah diurutkan, format:
-            [
-                {
-                    "rank_position": 1,
-                    "candidate_id": "uuid",
-                    "name": "Nama",
-                    "email": "email",
-                    "education_score": 80,
-                    "experience_score": 85,
-                    "skill_score": 95,
-                    "norm_education": 0.8421,
-                    "norm_experience": 0.8947,
-                    "norm_skill": 1.0,
-                    "preference_score": 0.9158
-                },
-                ...
-            ]
+    weights: dict opsional, misal {"education": 0.25, "experience": 0.50, "skill": 0.25}
+    Jika tidak diisi, pakai bobot default dari config.
     """
+    from config import settings
+
+    # Pakai bobot AHP jika ada, fallback ke config
+    w = weights if weights else settings.SAW_WEIGHTS
+
+    # ... sisa kode sama persis seperti sebelumnya, 
+    # tapi ganti baris ini:
+    #   w = settings.SAW_WEIGHTS
+    # menjadi sudah pakai variabel w di atas
 
     # ── VALIDASI INPUT ─────────────────────────────────
     if not candidates or len(candidates) < 2:

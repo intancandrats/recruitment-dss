@@ -25,6 +25,12 @@
       </button>
     </li>
     <li>
+      <button class="nav-link" id="nav-ahp"
+        onclick="if(currentSessionId){showPage('ahp');loadAHP(currentSessionId)}else{alert('Pilih session dulu!')}">
+        Bobot AHP
+      </button>
+    </li>
+    <li>
       <button class="nav-link" id="nav-ranking"
         onclick="if(currentSessionId){showPage('ranking');loadRanking(currentSessionId)}else{alert('Pilih session dulu!')}">
         Ranking
@@ -32,6 +38,8 @@
     </li>
   </ul>
 </nav>
+
+
 
 <!-- ── CONTAINER ───────────────────────────────────── -->
 <div class="container">
@@ -75,8 +83,8 @@
           ← Kembali
         </button>
         <button class="btn btn-success"
-          onclick="goToRanking(currentSessionId, currentSessionName)">
-          Lihat Ranking →
+          onclick="if(currentSessionId){showPage('ahp');loadAHP(currentSessionId)}else{alert('Pilih session dulu!')}">
+          Bobot AHP →
         </button>
       </div>
     </div>
@@ -115,8 +123,160 @@
     </div>
   </div>
 
+    <!-- ════════════════════════════════════════════════
+       HALAMAN 3: AHP
+  ════════════════════════════════════════════════ -->
+<div class="page" id="page-ahp">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Pembobotan AHP</div>
+      <div class="page-subtitle">
+        Session: <strong id="ahp-session-name">-</strong>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" 
+        onclick="goToUpload(currentSessionId, currentSessionName)">
+        ← Kembali
+      </button>
+      <button class="btn btn-success"
+        onclick="goToRanking(currentSessionId, currentSessionName)">
+        Lihat Ranking →
+      </button>
+    </div>
+  </div>
+
+  <!-- Penjelasan Skala Saaty -->
+  <div class="card" style="background:#fffbeb;border-color:#fde68a;margin-bottom:20px">
+    <div class="card-title" style="margin-bottom:12px">📏 Panduan Skala Saaty</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px">
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>1</strong> = Sama penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>3</strong> = Sedikit lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>5</strong> = Lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>7</strong> = Sangat lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>9</strong> = Mutlak lebih penting</span>
+    </div>
+  </div>
+
+  <div id="alert-ahp"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Form Perbandingan Berpasangan</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
+      Untuk setiap pasang kriteria, pilih mana yang lebih penting dan seberapa penting menggunakan skala di atas.
+    </p>
+
+    <!-- Perbandingan 1: Education vs Experience -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-1" class="form-control" style="width:140px" onchange="updateComparison(1)">
+              <option value="edu">Education</option>
+              <option value="exp">Experience</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-1" class="form-control" style="width:80px" onchange="updateComparison(1)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-1" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Experience</div>
+      </div>
+    </div>
+
+    <!-- Perbandingan 2: Education vs Skill -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-2" class="form-control" style="width:140px" onchange="updateComparison(2)">
+              <option value="edu">Education</option>
+              <option value="skill">Skill</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-2" class="form-control" style="width:80px" onchange="updateComparison(2)">
+              <option value="1" selected>1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-2" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
+      </div>
+    </div>
+
+    <!-- Perbandingan 3: Experience vs Skill -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Experience</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-3" class="form-control" style="width:140px" onchange="updateComparison(3)">
+              <option value="exp">Experience</option>
+              <option value="skill">Skill</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-3" class="form-control" style="width:80px" onchange="updateComparison(3)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-3" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-calc-ahp" onclick="submitAHP()" style="width:100%">
+      Hitung Bobot AHP
+    </button>
+  </div>
+
+  <!-- Hasil AHP -->
+  <div id="ahp-result" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">✅ Hasil Pembobotan AHP</div>
+        <span id="ahp-cr-badge"></span>
+      </div>
+      <div id="ahp-result-content"></div>
+    </div>
+  </div>
+</div>
+
   <!-- ════════════════════════════════════════════════
-       HALAMAN 3: RANKING
+       HALAMAN 4: RANKING
   ════════════════════════════════════════════════ -->
   <div class="page" id="page-ranking">
     <div class="page-header">
@@ -128,8 +288,8 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-outline"
-          onclick="goToUpload(currentSessionId, currentSessionName)">
-          ← Upload CV
+          onclick="showPage('ahp');loadAHP(currentSessionId)">
+          ← Kembali
         </button>
         <button class="btn btn-primary" id="btn-run-saw" onclick="runSAW()">
           Hitung Ranking SAW
@@ -137,24 +297,29 @@
       </div>
     </div>
 
-    <!-- Info bobot SAW -->
-    <div class="card" style="background:#eef2ff;border-color:#c7d2fe;margin-bottom:20px">
+    <!-- Info bobot SAW — diisi dinamis dari AHP -->
+    <div id="saw-weights-info" class="card" 
+      style="background:#eef2ff;border-color:#c7d2fe;margin-bottom:20px">
       <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
         <div>
           <span style="color:var(--text-muted)">Metode:</span>
-          <strong style="color:#3730a3;margin-left:6px">SAW (Simple Additive Weighting)</strong>
+          <strong style="color:#3730a3;margin-left:6px">AHP-SAW</strong>
         </div>
         <div>
           <span style="color:var(--text-muted)">Bobot Education:</span>
-          <strong style="color:#3730a3;margin-left:6px">30%</strong>
+          <strong id="w-edu" style="color:#3730a3;margin-left:6px">–</strong>
         </div>
         <div>
           <span style="color:var(--text-muted)">Bobot Experience:</span>
-          <strong style="color:#3730a3;margin-left:6px">40%</strong>
+          <strong id="w-exp" style="color:#3730a3;margin-left:6px">–</strong>
         </div>
         <div>
           <span style="color:var(--text-muted)">Bobot Skill:</span>
-          <strong style="color:#3730a3;margin-left:6px">30%</strong>
+          <strong id="w-skill" style="color:#3730a3;margin-left:6px">–</strong>
+        </div>
+        <div>
+          <span style="color:var(--text-muted)">Sumber bobot:</span>
+          <strong id="w-source" style="color:#3730a3;margin-left:6px">–</strong>
         </div>
       </div>
     </div>

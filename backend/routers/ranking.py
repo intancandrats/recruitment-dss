@@ -4,6 +4,50 @@ from database import get_supabase
 router = APIRouter(prefix="/ranking", tags=["Ranking"])
 
 # ── POST /ranking/calculate/{session_id} ───────────────
+
+# logika ambil bobot AHP
+@router.post("/calculate/{session_id}", response_model=dict)
+def calculate_ranking(session_id: str):
+    db = get_supabase()
+
+    # ... kode validasi session dan ambil kandidat sama seperti sebelumnya ...
+
+    # ── BARU: Coba ambil bobot AHP untuk session ini ──
+    ahp_result = db.table("ahp_weights") \
+        .select("weight_education, weight_experience, weight_skill") \
+        .eq("session_id", session_id) \
+        .order("created_at", desc=True) \
+        .limit(1) \
+        .execute()
+
+    if ahp_result.data:
+        # Pakai bobot dari AHP
+        ahp = ahp_result.data[0]
+        weights = {
+            "education":  ahp["weight_education"],
+            "experience": ahp["weight_experience"],
+            "skill":      ahp["weight_skill"]
+        }
+        weight_source = "AHP"
+    else:
+        # Fallback ke bobot default jika AHP belum dihitung
+        from config import settings
+        weights = settings.SAW_WEIGHTS
+        weight_source = "default"
+
+    # Panggil SAW dengan bobot yang sudah ditentukan
+    from services.saw_engine import calculate_saw
+    rankings = calculate_saw(candidates, weights=weights)
+
+    # ... sisa kode simpan ke database sama seperti sebelumnya ...
+
+    return {
+        "success": True,
+        "weight_source": weight_source,  # info bobot dari mana
+        "weights_used": weights,
+        # ... field lainnya ...
+    }
+
 # Jalankan algoritma SAW untuk session ini
 @router.post("/calculate/{session_id}", response_model=dict)
 def calculate_ranking(session_id: str):

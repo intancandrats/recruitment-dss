@@ -5,10 +5,9 @@ def calculate_saw(candidates: list, weights: dict = None) -> list:
     weights: dict opsional, misal {"education": 0.25, "experience": 0.50, "skill": 0.25}
     Jika tidak diisi, pakai bobot default dari config.
     """
-    from config import settings
 
     # Pakai bobot AHP jika ada, fallback ke config
-    w = weights if weights else settings.SAW_WEIGHTS
+    w = weights if weights else SAW_WEIGHTS
 
     # ... sisa kode sama persis seperti sebelumnya, 
     # tapi ganti baris ini:
@@ -72,7 +71,6 @@ def calculate_saw(candidates: list, weights: dict = None) -> list:
 
     # ── LANGKAH 3 & 4: KALIKAN BOBOT + HITUNG PREFERENSI
     # V_i = w_edu * r_edu + w_exp * r_exp + w_skill * r_skill
-    w = SAW_WEIGHTS   # {"education": 0.3, "experience": 0.4, "skill": 0.3}
 
     for row in matrix:
         preference = (

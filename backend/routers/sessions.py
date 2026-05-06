@@ -6,11 +6,9 @@ from typing import List
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 # ── POST /sessions ──────────────────────────────────────
-# Membuat recruitment session baru
 @router.post("", response_model=dict)
 def create_session(payload: SessionCreate):
     db = get_supabase()
-
     try:
         result = db.table("recruitment_sessions").insert({
             "title":       payload.title,
@@ -24,17 +22,14 @@ def create_session(payload: SessionCreate):
             "message": f"Session '{payload.title}' berhasil dibuat!",
             "data": result.data[0]
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── GET /sessions ───────────────────────────────────────
-# Mengambil semua session (terbaru duluan)
 @router.get("", response_model=dict)
 def get_all_sessions():
     db = get_supabase()
-
     try:
         result = db.table("recruitment_sessions") \
             .select("*") \
@@ -46,19 +41,51 @@ def get_all_sessions():
             "total": len(result.data),
             "data": result.data
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+
+# ══════════════════════════════════════════════════════
+# PENTING: /stats/summary HARUS di atas /{session_id}
+# Kalau di bawah, FastAPI salah baca jadi /{session_id}
+# ══════════════════════════════════════════════════════
+
+# ── GET /sessions/stats/summary ─────────────────────────
+@router.get("/stats/summary", response_model=dict)
+def get_dashboard_stats():
+    db = get_supabase()
+    try:
+        sessions_result = db.table("recruitment_sessions").select("*").execute()
+        all_sessions = sessions_result.data or []
+
+        active_sessions = [s for s in all_sessions if s.get("status") == "active"]
+        closed_sessions = [s for s in all_sessions if s.get("status") == "closed"]
+
+        candidates_result = db.table("candidates").select("id, status").execute()
+        all_candidates = candidates_result.data or []
+        scored_candidates = [c for c in all_candidates if c.get("status") == "scored"]
+
+        return {
+            "success": True,
+            "data": {
+                "total_sessions":      len(all_sessions),
+                "active_sessions":     len(active_sessions),
+                "closed_sessions":     len(closed_sessions),
+                "total_candidates":    len(all_candidates),
+                "scored_candidates":   len(scored_candidates),
+                "active_session_list": active_sessions  # semua session aktif, bukan slice
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── GET /sessions/{session_id} ──────────────────────────
-# Detail 1 session beserta jumlah kandidat di dalamnya
+# Harus di BAWAH /stats/summary
 @router.get("/{session_id}", response_model=dict)
 def get_session_detail(session_id: str):
     db = get_supabase()
-
     try:
-        # Ambil data session
         session = db.table("recruitment_sessions") \
             .select("*") \
             .eq("id", session_id) \
@@ -68,7 +95,6 @@ def get_session_detail(session_id: str):
         if not session.data:
             raise HTTPException(status_code=404, detail="Session tidak ditemukan")
 
-        # Hitung jumlah kandidat di session ini
         candidates = db.table("candidates") \
             .select("id", count="exact") \
             .eq("session_id", session_id) \
@@ -81,20 +107,17 @@ def get_session_detail(session_id: str):
                 "total_candidates": candidates.count or 0
             }
         }
-
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-# ── PATCH /sessions/{session_id}/status ────────────────
-# Toggle status session (active ↔ closed)
+
+
+# ── PATCH /sessions/{session_id}/status ─────────────────
 @router.patch("/{session_id}/status", response_model=dict)
 def toggle_session_status(session_id: str):
     db = get_supabase()
-
     try:
-        # Ambil status saat ini
         session = db.table("recruitment_sessions") \
             .select("id, status") \
             .eq("id", session_id) \
@@ -104,10 +127,8 @@ def toggle_session_status(session_id: str):
         if not session.data:
             raise HTTPException(status_code=404, detail="Session tidak ditemukan")
 
-        current_status = session.data["status"]
-        new_status = "closed" if current_status == "active" else "active"
+        new_status = "closed" if session.data["status"] == "active" else "active"
 
-        # Update status
         db.table("recruitment_sessions") \
             .update({"status": new_status}) \
             .eq("id", session_id) \
@@ -118,48 +139,7 @@ def toggle_session_status(session_id: str):
             "message": f"Status session berhasil diubah ke {new_status}",
             "new_status": new_status
         }
-
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-# ── GET /sessions/stats/summary ─────────────────────────
-# Summary statistik semua session
-@router.get("/stats/summary")
-def get_sessions_summary():
-    db = get_supabase()
-
-    try:
-        # ambil semua session
-        sessions = db.table("recruitment_sessions") \
-            .select("*") \
-            .execute()
-
-        # ambil semua kandidat
-        candidates = db.table("candidates") \
-            .select("*") \
-            .execute()
-
-        total_sessions = len(sessions.data)
-        total_candidates = len(candidates.data)
-
-        active_sessions = len([
-            s for s in sessions.data if s.get("status") == "active"
-        ])
-
-        return {
-            "success": True,
-            "data": {
-                "total_sessions": total_sessions,
-                "active_sessions": active_sessions,
-                "total_candidates": total_candidates,
-                "avg_candidates_per_session":
-                    total_candidates / total_sessions if total_sessions > 0 else 0
-            }
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    

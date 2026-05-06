@@ -86,3 +86,80 @@ def get_session_detail(session_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+# ── PATCH /sessions/{session_id}/status ────────────────
+# Toggle status session (active ↔ closed)
+@router.patch("/{session_id}/status", response_model=dict)
+def toggle_session_status(session_id: str):
+    db = get_supabase()
+
+    try:
+        # Ambil status saat ini
+        session = db.table("recruitment_sessions") \
+            .select("id, status") \
+            .eq("id", session_id) \
+            .single() \
+            .execute()
+
+        if not session.data:
+            raise HTTPException(status_code=404, detail="Session tidak ditemukan")
+
+        current_status = session.data["status"]
+        new_status = "closed" if current_status == "active" else "active"
+
+        # Update status
+        db.table("recruitment_sessions") \
+            .update({"status": new_status}) \
+            .eq("id", session_id) \
+            .execute()
+
+        return {
+            "success": True,
+            "message": f"Status session berhasil diubah ke {new_status}",
+            "new_status": new_status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# ── GET /sessions/stats/summary ─────────────────────────
+# Summary statistik semua session
+@router.get("/stats/summary")
+def get_sessions_summary():
+    db = get_supabase()
+
+    try:
+        # ambil semua session
+        sessions = db.table("recruitment_sessions") \
+            .select("*") \
+            .execute()
+
+        # ambil semua kandidat
+        candidates = db.table("candidates") \
+            .select("*") \
+            .execute()
+
+        total_sessions = len(sessions.data)
+        total_candidates = len(candidates.data)
+
+        active_sessions = len([
+            s for s in sessions.data if s.get("status") == "active"
+        ])
+
+        return {
+            "success": True,
+            "data": {
+                "total_sessions": total_sessions,
+                "active_sessions": active_sessions,
+                "total_candidates": total_candidates,
+                "avg_candidates_per_session":
+                    total_candidates / total_sessions if total_sessions > 0 else 0
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    

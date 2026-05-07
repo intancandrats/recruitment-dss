@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Recruitment DSS</title>
+<script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,37 +15,73 @@
 <div id="login-screen" class="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <span class="login-logo-icon">🎯</span>
-      <div class="login-logo-text">AI <span>Recruitment DSS</span></div>
-      <div class="login-logo-sub">Decision Support System</div>
-    </div>
+  <img src="logo_criterion.png" alt="Logo Criterion" class="login-logo-img" style="width: 180px; height: auto;">
+  <div class="login-logo-text">AI <span>Recruitment</span></div>
+  <div class="login-logo-sub">Decision Support System</div>
+</div>
 
     <div id="alert-login"></div>
 
+    <!-- Tab: Login / Register -->
+    <div class="auth-tabs" style="display: flex; justify-content: center; gap: 28px; margin-bottom: 20px;">
+  <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Masuk</button>
+  <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Daftar</button>
+</div>
+
+    <!-- FORM LOGIN -->
     <form id="form-login" onsubmit="submitLogin(event)">
       <div class="form-group">
-        <label class="form-label">Username</label>
-        <input type="text" class="form-control" id="login-username"
-          placeholder="Masukkan username" autocomplete="username" required>
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="login-email"
+          placeholder="Masukkan email" autocomplete="email" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Password</label>
-        <div style="position:relative">
-          <input type="password" class="form-control" id="login-password"
-            placeholder="Masukkan password" autocomplete="current-password" required>
-          <button type="button" onclick="togglePassword()"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px"
-            id="btn-toggle-pw">👁</button>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary" id="btn-login" style="width:100%;margin-top:8px">
-        Masuk sebagai Admin
-      </button>
+  <label class="form-label">Password</label>
+  <div style="position:relative">
+    <input type="password" class="form-control" id="login-password"
+      placeholder="Masukkan password" autocomplete="current-password" required>
+    <button type="button" onclick="togglePassword('login')"
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;"
+      class="btn-toggle-pw">
+      <i data-lucide="eye" style="width:18px; height:18px;"></i>
+    </button>
+  </div>
+</div>
+      <button type="submit" class="btn btn-primary" id="btn-login" 
+  style="width:100%; margin-top:6px; display:flex; justify-content:center; align-items:center; height: 36px;">
+  Masuk
+</button>
     </form>
 
-    <!-- <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--text-muted)">
-      Demo: username <strong>admin</strong> · password <strong>admin123</strong>
-    </div> -->
+    <!-- FORM REGISTER -->
+    <form id="form-register" onsubmit="submitRegister(event)" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nama Lengkap</label>
+        <input type="text" class="form-control" id="register-name"
+          placeholder="Masukkan nama lengkap" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="register-email"
+          placeholder="Masukkan email" autocomplete="email" required>
+      </div>
+     <div class="form-group">
+  <label class="form-label">Password</label>
+  <div style="position:relative">
+    <input type="password" class="form-control" id="register-password"
+      placeholder="Masukkan password (minimal 8 karakter)" autocomplete="new-password" required>
+    <button type="button" onclick="togglePassword('register')"
+      style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);display:flex;align-items:center;"
+      class="btn-toggle-pw">
+      <i data-lucide="eye" style="width:18px; height:18px;"></i>
+    </button>
+  </div>
+</div>
+      <button type="submit" class="btn btn-primary" id="btn-register" 
+      style="width:100%; margin-top:6px; display:flex; justify-content:center; align-items:center; height: 36px;">
+        Daftar
+      </button>
+    </form>
   </div>
 </div>
 
@@ -55,43 +92,44 @@
 
 <!-- ── NAVBAR ──────────────────────────────────────── -->
 <nav class="navbar">
-<<<<<<< HEAD
   <a class="navbar-brand" href="#">
     <img src="logo_criterion.png" alt="Logo Criterion" class="navbar-logo">
   </a>
-=======
-  <a class="navbar-brand" href="#">🎯 <span>Recruitment DSS</span></a>
->>>>>>> c262d67a1d9764aa7defc544c81a4392f066da86
+
+  
   <ul class="navbar-nav">
     <li>
-      <button class="nav-link" id="nav-dashboard"
-        onclick="showPage('dashboard');loadDashboard()">
-        📊 Dashboard
-      </button>
+      <button class="nav-link" id="nav-dashboard" onclick="showPage('dashboard');loadDashboard()">
+      <!-- Ikon: Layouter -->
+      <i data-lucide="layout-dashboard"></i> Dashboard
+    </button>
     </li>
     <li>
-      <button class="nav-link active" id="nav-sessions"
-        onclick="showPage('sessions');loadSessions()">
-        📋 Sessions
-      </button>
-    </li>
-    <li>
-      <button class="nav-link" id="nav-ahp"
-        onclick="if(currentSessionId){showPage('ahp');loadAHP(currentSessionId)}else{alert('Pilih session dulu!')}">
-        ⚖️ Bobot AHP
-      </button>
+      <button class="nav-link active" id="nav-sessions" onclick="showPage('sessions');loadSessions()">
+      <!-- Ikon: Kotak centang / Agenda -->
+      <i data-lucide="clipboard"></i> Sessions
+    </button>
     </li>
     <li>
       <button class="nav-link" id="nav-upload"
-        onclick="if(currentSessionId){showPage('upload')}else{alert('Pilih session dulu!')}">
-        📤 Upload CV
-      </button>
+  onclick="if(!currentSessionId){alert('Silahkan memilih session terlebih dahulu');showPage('sessions');loadSessions();return}goToUpload(currentSessionId,currentSessionName)">
+      <!-- Ikon: Awan unggah (lineart) -->
+      <i data-lucide="cloud-upload"></i> Upload CV
+    </button>
+    </li>
+    <li>
+      <button class="nav-link" id="nav-ahp" 
+  onclick="if(!currentSessionId){alert('Silahkan memilih session terlebih dahulu');showPage('sessions');loadSessions();return}showPage('ahp');loadAHP(currentSessionId)">
+      <!-- Ikon: Timbangan berimbang -->
+      <i data-lucide="calculator"></i> Bobot AHP
+    </button>
     </li>
     <li>
       <button class="nav-link" id="nav-ranking"
-        onclick="if(currentSessionId){goToRanking(currentSessionId, currentSessionName)}else{alert('Pilih session dulu!')}">
-        🏆 Ranking
-      </button>
+  onclick="if(!currentSessionId){alert('Silahkan memilih session terlebih dahulu');showPage('sessions');loadSessions();return}goToRanking(currentSessionId,currentSessionName)">
+      <!-- Ikon: Peringkat / Tiga batang -->
+      <i data-lucide="award"></i> Ranking
+    </button>
     </li>
   </ul>
   <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
@@ -109,7 +147,7 @@
   <div class="page" id="page-dashboard">
     <div class="page-header">
       <div>
-        <div class="page-title">Dashboard</div>
+        <div class="page-title">Recruitment Overview</div>
         <div class="page-subtitle">Ringkasan aktivitas rekrutmen</div>
       </div>
       <button class="btn btn-outline btn-sm" onclick="loadDashboard()">↻ Refresh</button>
@@ -117,71 +155,104 @@
 
     <!-- Stat Cards -->
     <div class="stats-grid" id="dashboard-stats">
-      <div class="stat-card">
-        <div class="stat-icon">📋</div>
-        <div class="stat-value" id="stat-total-sessions">–</div>
-        <div class="stat-label">Total Session</div>
+  <!-- Card 1 -->
+  <div class="stat-card">
+    <div class="stat-icon-box icon-purple">
+      <i data-lucide="clipboard"></i>
+    </div>
+    <div class="stat-value" id="stat-total-sessions">–</div>
+    <div class="stat-label">Total Session</div>
+  </div>
+
+    <!-- Card 2 -->
+    <div class="stat-card">
+      <div class="stat-icon-box icon-green">
+        <i data-lucide="check-circle-2"></i>
       </div>
-      <div class="stat-card stat-card-success">
-        <div class="stat-icon">✅</div>
-        <div class="stat-value" id="stat-active-sessions">–</div>
-        <div class="stat-label">Session Aktif</div>
-      </div>
-      <div class="stat-card stat-card-muted">
-        <div class="stat-icon">🔒</div>
-        <div class="stat-value" id="stat-closed-sessions">–</div>
-        <div class="stat-label">Session Selesai</div>
-      </div>
-      <div class="stat-card stat-card-info">
-        <div class="stat-icon">👥</div>
-        <div class="stat-value" id="stat-total-candidates">–</div>
-        <div class="stat-label">Total Kandidat</div>
-      </div>
-      <div class="stat-card stat-card-warning">
-        <div class="stat-icon">🤖</div>
-        <div class="stat-value" id="stat-scored-candidates">–</div>
-        <div class="stat-label">CV Terskor AI</div>
-      </div>
+      <div class="stat-value" id="stat-active-sessions">–</div>
+      <div class="stat-label">Session Aktif</div>
     </div>
 
-    Session Aktif
-    <div class="card" style="margin-top:24px">
-      <div class="card-header">
-        <div class="card-title">📌 Session Aktif Saat Ini</div>
-        <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ Buat Session Baru</button>
-      </div>
-      <div id="dashboard-active-sessions">
-        <p style="color:var(--text-muted);font-size:13px">Memuat...</p>
-      </div>
+  <!-- Card 3 -->
+  <div class="stat-card">
+    <div class="stat-icon-box icon-orange">
+      <i data-lucide="lock"></i>
     </div>
+    <div class="stat-value" id="stat-closed-sessions">–</div>
+    <div class="stat-label">Session Selesai</div>
+  </div>
+
+  <!-- Card 4 -->
+  <div class="stat-card">
+    <div class="stat-icon-box icon-blue">
+      <i data-lucide="users"></i>
+    </div>
+    <div class="stat-value" id="stat-total-candidates">–</div>
+    <div class="stat-label">Total Kandidat</div>
+  </div>
+
+  <!-- Card 5 -->
+  <div class="stat-card">
+    <div class="stat-icon-box icon-red">
+      <i data-lucide="bot"></i>
+    </div>
+    <div class="stat-value" id="stat-scored-candidates">–</div>
+    <div class="stat-label">CV Terskor AI</div>
+  </div>
+</div>
+
+    <div class="card" style="margin-top:24px">
+  <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div class="card-title" style="display: flex; align-items: center; gap: 12px;">
+      <!-- Kotak Ikon Baru -->
+      <div class="stat-icon-box icon-green-header" style="margin-bottom: 0; width: 38px; height: 38px;">
+        <i data-lucide="check-circle-2"></i>
+      </div>
+      Session Aktif Saat Ini
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openCreateModal()"> Buat Session Baru</button>
+  </div>
+  <div id="dashboard-active-sessions">
+    <p style="color:var(--text-muted);font-size:13px">Memuat...</p>
+  </div>
+</div>
 
     <!-- Quick Actions -->
     <div class="card" style="margin-top:16px">
-      <div class="card-header">
-        <div class="card-title">⚡ Session Information</div>
+  <div class="card-header" style="display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px; margin-bottom: 16px;">
+    <div class="card-title" style="display: flex; align-items: center; gap: 12px; font-weight: 600; color: #1e293b;">
+      <!-- Kotak Ikon Ungu (Style Diperbarui) -->
+      <div class="icon-purple" style="width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #AC52FF; border: none; color: #ffffff;">
+        <i data-lucide="lightbulb" style="width: 22px; height: 22px;"></i>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="openCreateModal()">+ Buat Session Baru</button>
-        <button class="btn btn-outline" onclick="showPage('sessions');loadSessions()">Kelola Semua Session</button>
-        <button class="btn btn-outline"
-          onclick="if(currentSessionId){goToRanking(currentSessionId,currentSessionName)}else{showPage('sessions')}">
-          Lihat Ranking Terakhir
-        </button>
-      </div>
+      Session Information
     </div>
   </div>
+  
+  <div style="display:flex; gap:10px; flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="openCreateModal()"> Buat Session Baru</button>
+    <button class="btn btn-outline" onclick="showPage('sessions');loadSessions()">Kelola Semua Session</button>
+    <button class="btn btn-outline"
+      onclick="if(currentSessionId){goToRanking(currentSessionId,currentSessionName)}else{showPage('sessions')}">
+      Lihat Ranking Terakhir
+    </button>
+  </div>
+</div>
+ </div>
+    
 
   <!-- ════════════════════════════════════════════════
        HALAMAN SESSIONS
   ════════════════════════════════════════════════ -->
   <div class="page active" id="page-sessions">
+
     <div class="page-header">
       <div>
         <div class="page-title">Recruitment Sessions</div>
         <div class="page-subtitle">Kelola semua sesi rekrutmen</div>
       </div>
       <button class="btn btn-primary" onclick="openCreateModal()">
-        + Buat Session Baru
+        Buat Session Baru
       </button>
     </div>
 
@@ -197,267 +268,303 @@
     <div class="sessions-grid" id="sessions-grid">
       <p style="color:var(--text-muted);font-size:13px">Memuat session...</p>
     </div>
-  </div>
+
+  </div> <!-- Penutup container -->
 
   <!-- ════════════════════════════════════════════════
        HALAMAN AHP
   ════════════════════════════════════════════════ -->
   <div class="page" id="page-ahp">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Pembobotan AHP</div>
-        <div class="page-subtitle">
-          Session: <strong id="ahp-session-name">-</strong>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-outline"
-          onclick="goToUpload(currentSessionId, currentSessionName)">
-          ← Upload CV
-        </button>
-        <button class="btn btn-success"
-          onclick="goToRanking(currentSessionId, currentSessionName)">
-          Lihat Ranking →
-        </button>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Pembobotan AHP</div>
+      <div class="page-subtitle">
+        Session: <strong id="ahp-session-name">-</strong>
       </div>
     </div>
-
-    <!-- Penjelasan Skala Saaty -->
-    <div class="card" style="background:#fffbeb;border-color:#fde68a;margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:12px">📏 Panduan Skala Saaty</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px">
-        <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>1</strong> = Sama penting</span>
-        <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>3</strong> = Sedikit lebih penting</span>
-        <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>5</strong> = Lebih penting</span>
-        <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>7</strong> = Sangat lebih penting</span>
-        <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>9</strong> = Mutlak lebih penting</span>
-      </div>
-    </div>
-
-    <div id="alert-ahp"></div>
-
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Form Perbandingan Berpasangan</div>
-      </div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
-        Untuk setiap pasang kriteria, pilih mana yang lebih penting dan seberapa penting menggunakan skala di atas.
-      </p>
-
-      <!-- Perbandingan 1: Education vs Experience -->
-      <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
-          <div style="flex:1;text-align:center">
-            <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
-            <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-              <select id="ahp-left-1" class="form-control" style="width:140px" onchange="updateComparison(1)">
-                <option value="edu">Education</option>
-                <option value="exp">Experience</option>
-              </select>
-              <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
-              <select id="ahp-val-1" class="form-control" style="width:80px" onchange="updateComparison(1)">
-                <option value="1">1</option><option value="2">2</option>
-                <option value="3" selected>3</option><option value="4">4</option>
-                <option value="5">5</option><option value="6">6</option>
-                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              </select>
-            </div>
-            <div id="ahp-desc-1" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
-          </div>
-          <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Experience</div>
-        </div>
-      </div>
-
-      <!-- Perbandingan 2: Education vs Skill -->
-      <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
-          <div style="flex:1;text-align:center">
-            <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
-            <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-              <select id="ahp-left-2" class="form-control" style="width:140px" onchange="updateComparison(2)">
-                <option value="edu">Education</option>
-                <option value="skill">Skill</option>
-              </select>
-              <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
-              <select id="ahp-val-2" class="form-control" style="width:80px" onchange="updateComparison(2)">
-                <option value="1" selected>1</option><option value="2">2</option>
-                <option value="3">3</option><option value="4">4</option>
-                <option value="5">5</option><option value="6">6</option>
-                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              </select>
-            </div>
-            <div id="ahp-desc-2" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
-          </div>
-          <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
-        </div>
-      </div>
-
-      <!-- Perbandingan 3: Experience vs Skill -->
-      <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div style="font-weight:600;color:var(--primary);min-width:120px">Experience</div>
-          <div style="flex:1;text-align:center">
-            <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
-            <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-              <select id="ahp-left-3" class="form-control" style="width:140px" onchange="updateComparison(3)">
-                <option value="exp">Experience</option>
-                <option value="skill">Skill</option>
-              </select>
-              <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
-              <select id="ahp-val-3" class="form-control" style="width:80px" onchange="updateComparison(3)">
-                <option value="1">1</option><option value="2">2</option>
-                <option value="3" selected>3</option><option value="4">4</option>
-                <option value="5">5</option><option value="6">6</option>
-                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              </select>
-            </div>
-            <div id="ahp-desc-3" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
-          </div>
-          <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" id="btn-calc-ahp" onclick="submitAHP()" style="width:100%">
-        Hitung Bobot AHP
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" style="display:flex; align-items:center; gap:6px"
+        onclick="goToUpload(currentSessionId, currentSessionName)">
+        <i data-lucide="arrow-left" style="width:14px"></i> Upload CV
+      </button>
+      <button class="btn btn-success" style="display:flex; align-items:center; gap:6px"
+        onclick="goToRanking(currentSessionId, currentSessionName)">
+        Lihat Ranking <i data-lucide="arrow-right" style="width:14px"></i>
       </button>
     </div>
+  </div>
 
-    <!-- Hasil AHP -->
-    <div id="ahp-result" style="display:none">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">✅ Hasil Pembobotan AHP</div>
-          <span id="ahp-cr-badge"></span>
-        </div>
-        <div id="ahp-result-content"></div>
+  <!-- Penjelasan Skala Saaty -->
+  <div class="card" style="background:#fffbeb;border-color:#fde68a;margin-bottom:20px">
+    <div class="card-title" style="margin-bottom:12px; display:flex; align-items:center; gap:10px">
+      <div style="background:#FE9A00; color:white; padding:6px; border-radius:12px; display:flex;">
+        <i data-lucide="map" style="width:26px; height:26px;"></i>
       </div>
+      Panduan Skala Saaty
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px">
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>1</strong> = Sama penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>3</strong> = Sedikit lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>5</strong> = Lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>7</strong> = Sangat lebih penting</span>
+      <span style="background:#fff;border:1px solid #fde68a;border-radius:6px;padding:4px 10px"><strong>9</strong> = Mutlak lebih penting</span>
     </div>
   </div>
+
+  <div id="alert-ahp"></div>
+
+  <div class="card">
+    <div class="card-header" style="display:flex; align-items:center; gap:10px; justify-content: flex-start;">
+      <div style="background:#3B83F1; color:white; padding:6px; border-radius:12px; display:flex;">
+        <i data-lucide="file-text" style="width:26px; height:26px;"></i>
+      </div>
+      <div class="card-title">Form Perbandingan Berpasangan</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px; margin-top:10px;">
+      Untuk setiap pasang kriteria, pilih mana yang lebih penting dan seberapa penting menggunakan skala di atas.
+    </p>
+
+    <!-- Perbandingan 1: Education vs Experience -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-1" class="form-control" style="width:140px" onchange="updateComparison(1)">
+              <option value="edu">Education</option>
+              <option value="exp">Experience</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-1" class="form-control" style="width:80px" onchange="updateComparison(1)">
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3" selected>3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-1" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Experience</div>
+      </div>
+    </div>
+
+    <!-- Perbandingan 2: Education vs Skill -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Education</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-2" class="form-control" style="width:140px" onchange="updateComparison(2)">
+              <option value="edu">Education</option>
+              <option value="skill">Skill</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-2" class="form-control" style="width:80px" onchange="updateComparison(2)">
+              <option value="1" selected>1</option><option value="2">2</option>
+              <option value="3">3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-2" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
+      </div>
+    </div>
+
+    <!-- Perbandingan 3: Experience vs Skill -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-weight:600;color:var(--primary);min-width:120px">Experience</div>
+        <div style="flex:1;text-align:center">
+          <label class="form-label" style="text-transform:none;letter-spacing:0">Mana yang lebih penting?</label>
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+            <select id="ahp-left-3" class="form-control" style="width:140px" onchange="updateComparison(3)">
+              <option value="exp">Experience</option>
+              <option value="skill">Skill</option>
+            </select>
+            <span style="font-size:13px;color:var(--text-muted)">lebih penting dengan nilai</span>
+            <select id="ahp-val-3" class="form-control" style="width:80px" onchange="updateComparison(3)">
+              <option value="1">1</option><option value="2">2</option>
+              <option value="3" selected>3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+            </select>
+          </div>
+          <div id="ahp-desc-3" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+        </div>
+        <div style="font-weight:600;color:var(--primary);min-width:120px;text-align:right">Skill</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-calc-ahp" onclick="submitAHP()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px">
+      <i data-lucide="calculator" style="width:16px"></i> Hitung Bobot AHP
+    </button>
+  </div>
+
+  <!-- Hasil AHP -->
+  <div id="ahp-result" style="display:none">
+    <div class="card">
+      <div class="card-header" style="display:flex; align-items:center; justify-content:space-between">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div style="background:#10B981; color:white; padding:6px; border-radius:12px; display:flex;">
+            <i data-lucide="check-circle-2" style="width:26px; height:26px;"></i>
+          </div>
+          <div class="card-title">Hasil Pembobotan AHP</div>
+        </div>
+        <span id="ahp-cr-badge"></span>
+      </div>
+      <div id="ahp-result-content" style="margin-top:15px"></div>
+    </div>
+  </div>
+</div>
 
   <!-- ════════════════════════════════════════════════
        HALAMAN UPLOAD CV
   ════════════════════════════════════════════════ -->
   <div class="page" id="page-upload">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Upload CV Kandidat</div>
-        <div class="page-subtitle">
-          Session: <strong id="upload-session-name">-</strong>
-          <span style="font-size:11px;color:var(--text-muted);margin-left:8px"
-            id="upload-session-id-display"></span>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-outline" onclick="showPage('sessions')">
-          ← Kembali
-        </button>
-        <button class="btn btn-success"
-          onclick="if(currentSessionId){showPage('ahp');loadAHP(currentSessionId)}else{alert('Pilih session dulu!')}">
-          Bobot AHP →
-        </button>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Upload CV Kandidat</div>
+      <div class="page-subtitle">
+        Session: <strong id="upload-session-name">-</strong>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px"
+          id="upload-session-id-display"></span>
       </div>
     </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" style="display:flex; align-items:center; gap:6px" onclick="showPage('sessions')">
+        <i data-lucide="arrow-left" style="width:14px"></i> Kembali
+      </button>
+      <button class="btn btn-success" style="display:flex; align-items:center; gap:6px"
+        onclick="if(currentSessionId){showPage('ahp');loadAHP(currentSessionId)}else{alert('Pilih session dulu!')}">
+        Bobot AHP <i data-lucide="arrow-right" style="width:14px"></i>
+      </button>
+    </div>
+  </div>
 
-    <div id="alert-upload"></div>
+  <div id="alert-upload"></div>
 
-    <div class="card">
-      <div class="card-header">
+  <div class="card">
+    <div class="card-header" style="display:flex; align-items:center; gap:10px; justify-content: flex-start;">
+      <div style="background:#AC52FF; color:white; padding:6px; border-radius:12px; display:flex;">
+        <i data-lucide="plus-circle" style="width:26px; height:26px;"></i>
+      </div>
+      <div>
         <div class="card-title">Tambah CV</div>
         <span style="font-size:12px;color:var(--text-muted)">Format: PDF · Bisa bulk upload</span>
       </div>
-      <div class="drop-zone" id="drop-zone">
-        <div class="drop-zone-icon">📂</div>
-        <div class="drop-zone-text">Klik atau drag & drop file PDF di sini</div>
-        <div class="drop-zone-hint">Bisa pilih banyak file sekaligus</div>
-      </div>
-      <input type="file" id="cv-file-input" accept=".pdf" multiple style="display:none">
     </div>
+    
+    <div class="drop-zone" id="drop-zone" style="cursor: pointer; border: 2px dashed #e2e8f0; border-radius: 12px; padding: 40px; text-align: center; margin-top: 15px; transition: all 0.3s ease;">
+      <div class="drop-zone-icon" style="margin-bottom: 12px; color: #000000;">
+        <i data-lucide="file-up" style="width:40px; height:40px; margin: 0 auto;"></i>
+      </div>
+      <div class="drop-zone-text" style="font-weight: 600; font-size: 14px; color: var(--text-main);">Klik atau drag & drop file PDF di sini</div>
+      <div class="drop-zone-hint" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Bisa pilih banyak file sekaligus</div>
+    </div>
+    <input type="file" id="cv-file-input" accept=".pdf" multiple style="display:none">
+  </div>
 
-    <div id="upload-queue"></div>
+  <div id="upload-queue"></div>
 
-    <div class="card" style="margin-top:24px">
-      <div class="card-header">
+  <div class="card" style="margin-top:24px">
+    <div class="card-header" style="display:flex; align-items:center; justify-content: space-between;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="background:#EF4444; color:white; padding:6px; border-radius:12px; display:flex;">
+          <i data-lucide="users" style="width:26px; height:26px;"></i>
+        </div>
         <div class="card-title">Kandidat dalam Session</div>
-        <button class="btn btn-outline btn-sm" onclick="loadCandidates(currentSessionId)">Refresh</button>
       </div>
-      <div id="candidates-list">
-        <p style="color:var(--text-muted);font-size:13px">Pilih session untuk melihat kandidat.</p>
-      </div>
+      <button class="btn btn-outline btn-sm" style="display:flex; align-items:center; gap:6px" onclick="loadCandidates(currentSessionId)">
+        <i data-lucide="refresh-cw" style="width:14px"></i> Refresh
+      </button>
+    </div>
+    <div id="candidates-list" style="margin-top: 15px;">
+      <p style="color:var(--text-muted);font-size:13px; text-align: center; padding: 20px;">Pilih session untuk melihat kandidat.</p>
     </div>
   </div>
+</div>
 
   <!-- ════════════════════════════════════════════════
        HALAMAN RANKING
   ════════════════════════════════════════════════ -->
   <div class="page" id="page-ranking">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Ranking Kandidat</div>
-        <div class="page-subtitle">
-          Session: <strong id="ranking-session-name">-</strong>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-outline"
-          onclick="showPage('ahp');loadAHP(currentSessionId)">
-          ← Bobot AHP
-        </button>
-        <button class="btn btn-primary" id="btn-run-saw" onclick="runSAW()">
-          Hitung Ranking SAW
-        </button>
+  <div class="page-header">
+    <div>
+      <div class="page-title">Ranking Kandidat</div>
+      <div class="page-subtitle">
+        Session: <strong id="ranking-session-name">-</strong>
       </div>
     </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-outline" style="display:flex; align-items:center; gap:6px"
+        onclick="showPage('ahp');loadAHP(currentSessionId)">
+        <i data-lucide="arrow-left" style="width:14px"></i> Bobot AHP
+      </button>
+      <button class="btn btn-primary" id="btn-run-saw" style="display:flex; align-items:center; gap:6px" onclick="runSAW()">
+         Hitung Ranking SAW
+      </button>
+    </div>
+  </div>
 
-    <!-- Info bobot SAW — diisi dinamis dari AHP -->
-    <div id="saw-weights-info" class="card"
-      style="background:#eef2ff;border-color:#c7d2fe;margin-bottom:20px">
-      <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px">
+  <!-- Info bobot SAW — diisi dinamis dari AHP -->
+  <div id="saw-weights-info" class="card"
+    style="background:#eef2ff;border-color:#c7d2fe;margin-bottom:20px">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px; align-items:center">
+      <div style="display:flex; align-items:center; gap:8px">
+        <div style="background:#3730a3; color:white; padding:4px; border-radius:12px; display:flex;">
+          <i data-lucide="layers" style="width:26px; height:26px;"></i>
+        </div>
         <div>
           <span style="color:var(--text-muted)">Metode:</span>
-          <strong style="color:#3730a3;margin-left:6px">AHP-SAW</strong>
-        </div>
-        <div>
-          <span style="color:var(--text-muted)">Bobot Education:</span>
-          <strong id="w-edu" style="color:#3730a3;margin-left:6px">–</strong>
-        </div>
-        <div>
-          <span style="color:var(--text-muted)">Bobot Experience:</span>
-          <strong id="w-exp" style="color:#3730a3;margin-left:6px">–</strong>
-        </div>
-        <div>
-          <span style="color:var(--text-muted)">Bobot Skill:</span>
-          <strong id="w-skill" style="color:#3730a3;margin-left:6px">–</strong>
-        </div>
-        <div>
-          <span style="color:var(--text-muted)">Sumber:</span>
-          <strong id="w-source" style="color:#3730a3;margin-left:6px">–</strong>
+          <strong style="color:#3730a3;margin-left:4px">AHP-SAW</strong>
         </div>
       </div>
-    </div>
-
-    <div id="alert-ranking"></div>
-
-    <!-- Podium ranking teratas (rank 1-3) — muncul setelah ada data -->
-    <div id="ranking-podium" style="display:none;margin-bottom:24px"></div>
-
-    <!-- Tabel ranking lengkap -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">📊 Ranking Lengkap</div>
+      <div>
+        <span style="color:var(--text-muted)">Bobot Education:</span>
+        <strong id="w-edu" style="color:#3730a3;margin-left:6px">–</strong>
       </div>
-      <div id="ranking-table">
-        <div class="empty-state">
-          <div class="empty-state-icon">📊</div>
-          <div class="empty-state-text">Pilih session terlebih dahulu</div>
-        </div>
+      <div>
+        <span style="color:var(--text-muted)">Bobot Experience:</span>
+        <strong id="w-exp" style="color:#3730a3;margin-left:6px">–</strong>
+      </div>
+      <div>
+        <span style="color:var(--text-muted)">Bobot Skill:</span>
+        <strong id="w-skill" style="color:#3730a3;margin-left:6px">–</strong>
+      </div>
+      <div>
+        <span style="color:var(--text-muted)">Sumber:</span>
+        <strong id="w-source" style="color:#3730a3;margin-left:6px">–</strong>
       </div>
     </div>
   </div>
 
-</div><!-- /container -->
-</div><!-- /app-main -->
+  <div id="alert-ranking"></div>
+
+  <!-- Podium ranking teratas (rank 1-3) — muncul setelah ada data -->
+  <div id="ranking-podium" style="display:none;margin-bottom:24px"></div>
+
+  <!-- Tabel ranking lengkap -->
+  <div class="card">
+    <div class="card-header" style="display:flex; align-items:center; gap:10px; justify-content: flex-start;">
+      <div style="background:#3B83F1; color:white; padding:6px; border-radius:12px; display:flex;">
+        <i data-lucide="bar-chart-3" style="width:26px; height:26px;"></i>
+      </div>
+      <div class="card-title">Ranking Lengkap</div>
+    </div>
+    <div id="ranking-table">
+      <div class="empty-state" style="padding: 40px 0;">
+        <div class="empty-state-icon" style="color: var(--text-muted); margin-bottom: 12px;">
+          <i data-lucide="search-x" style="width:48px; height:48px; margin: 0 auto;"></i>
+        </div>
+        <div class="empty-state-text" style="color: var(--text-muted);">Pilih session terlebih dahulu</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── MODAL: BUAT SESSION ──────────────────────────── -->
 <div class="modal-overlay" id="modal-create"
@@ -492,5 +599,8 @@
 </div>
 
 <script src="app.js"></script>
+<script>
+      lucide.createIcons();
+    </script>
 </body>
 </html>

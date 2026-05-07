@@ -1,11 +1,119 @@
 // ── KONFIGURASI ─────────────────────────────────────────
 const API_BASE = "http://localhost:8000";
+const LAST_PAGE_KEY = "app_last_page";
+const LAST_SESSION_KEY = "app_last_session";
 
-// ── ADMIN CREDENTIALS (ganti dengan sistem auth nyata) ──
-const ADMIN_USERS = [
-  { username: "admin", password: "admin123", displayName: "Admin HR" },
-  { username: "hr_manager", password: "hr2025", displayName: "HR Manager" },
-];
+function persistLastPage(pageId) {
+  if (!pageId || pageId === "login" || pageId === "register") {
+    localStorage.removeItem(LAST_PAGE_KEY);
+    return;
+  }
+  localStorage.setItem(LAST_PAGE_KEY, pageId);
+}
+
+function getLastPage() {
+  return localStorage.getItem(LAST_PAGE_KEY);
+}
+
+function persistLastSession(sessionId, sessionName) {
+  if (!sessionId || !sessionName) {
+    localStorage.removeItem(LAST_SESSION_KEY);
+    return;
+  }
+  localStorage.setItem(
+    LAST_SESSION_KEY,
+    JSON.stringify({ id: sessionId, name: sessionName }),
+  );
+}
+
+function getLastSessionContext() {
+  try {
+    return JSON.parse(localStorage.getItem(LAST_SESSION_KEY));
+  } catch (e) {
+    return null;
+  }
+}
+
+function setCurrentSessionContext(sessionId, sessionName) {
+  currentSessionId = sessionId;
+  currentSessionName = sessionName || currentSessionName || "";
+  persistLastSession(sessionId, currentSessionName);
+}
+
+async function restoreLastPageState() {
+  const lastPage = getLastPage();
+  const lastSession = getLastSessionContext();
+
+  if (!lastPage) {
+    showPage("dashboard");
+    await loadDashboard();
+    return;
+  }
+
+  if (lastPage === "dashboard") {
+    showPage("dashboard");
+    await loadDashboard();
+    return;
+  }
+
+  if (lastPage === "sessions") {
+    showPage("sessions");
+    await loadSessions();
+    return;
+  }
+
+  if (lastPage === "upload" && lastSession?.id) {
+    setCurrentSessionContext(lastSession.id, lastSession.name);
+    document.getElementById("upload-session-name").textContent = lastSession.name;
+    document.getElementById("upload-session-id-display").textContent = lastSession.id;
+    await loadCandidates(lastSession.id);
+    showPage("upload");
+    return;
+  }
+
+  if (lastPage === "ranking" && lastSession?.id) {
+    setCurrentSessionContext(lastSession.id, lastSession.name);
+    document.getElementById("ranking-session-name").textContent = lastSession.name;
+    await loadRanking(lastSession.id);
+    showPage("ranking");
+    return;
+  }
+
+  if (lastPage === "ahp" && lastSession?.id) {
+    setCurrentSessionContext(lastSession.id, lastSession.name);
+    showPage("ahp");
+    await loadAHP(lastSession.id);
+    return;
+  }
+
+  showPage("dashboard");
+  await loadDashboard();
+}
+
+// ── NAVIGASI HALAMAN ────────────────────────────────────
+function showPage(pageId) {
+  // Sembunyikan semua halaman
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+  
+  // Tampilkan halaman yang dipilih
+  const pageEl = document.getElementById('page-' + pageId);
+  if (pageEl) {
+    pageEl.classList.add('active');
+  }
+  
+  // Update navbar active state
+  document.querySelectorAll('.nav-link').forEach(nav => {
+    nav.classList.remove('active');
+  });
+  const navEl = document.getElementById('nav-' + pageId);
+  if (navEl) {
+    navEl.classList.add('active');
+  }
+
+  persistLastPage(pageId);
+}
 
 // ── STATE GLOBAL ─────────────────────────────────────────
 let currentSessionId = null;
@@ -18,98 +126,176 @@ let currentFilter = "all";
 // AUTH — LOGIN & LOGOUT
 // ══════════════════════════════════════════════════
 
-function togglePassword() {
-  const input = document.getElementById("login-password");
-  const btn = document.getElementById("btn-toggle-pw");
+function switchAuthTab(tab) {
+  // Ubah active tab
+  document.getElementById("tab-login").classList.toggle("active", tab === "login");
+  document.getElementById("tab-register").classList.toggle("active", tab === "register");
+  
+  // Ubah form yang ditampilkan
+  document.getElementById("form-login").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("form-register").style.display = tab === "register" ? "block" : "none";
+  
+  // Reset alert
+  document.getElementById("alert-login").innerHTML = "";
+}
+
+function togglePassword(formType) {
+  const inputId = formType === "login" ? "login-password" : "register-password";
+  const input = document.getElementById(inputId);
+  const buttons = document.querySelectorAll(".btn-toggle-pw");
+  
   if (input.type === "password") {
     input.type = "text";
-    btn.textContent = "🙈";
+    // Menggunakan icon mata tertutup (eye-off)
+    buttons.forEach(btn => {
+      btn.innerHTML = `<i data-lucide="eye-off" style="width:18px; height:18px;"></i>`;
+    });
   } else {
     input.type = "password";
-    btn.textContent = "👁";
+    // Menggunakan icon mata terbuka (eye)
+    buttons.forEach(btn => {
+      btn.innerHTML = `<i data-lucide="eye" style="width:18px; height:18px;"></i>`;
+    });
+  }
+
+  // Penting: Render ulang icon agar Lucide mengenali tag <i> yang baru ditambahkan
+  lucide.createIcons();
+}
+
+async function submitLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const btn = document.getElementById("btn-login");
+  const alertEl = document.getElementById("alert-login");
+
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Memproses...`;
+
+  try {
+    const response = await apiFetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    // Simpan session login
+    currentAdmin = response;
+    sessionStorage.setItem("adminSession", JSON.stringify(response));
+
+    // Tampilkan nama admin di navbar
+    document.getElementById("navbar-admin-name").innerHTML = `
+  <span class="admin-badge" style="display:inline-flex; align-items:center; gap:6px;">
+    <i data-lucide="user" style="width:14px; height:14px;"></i>
+    ${response.name}
+  </span>`;
+
+// Wajib panggil ini agar icon dirender
+lucide.createIcons();
+
+    // Sembunyikan login, tampilkan app
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-main").style.display = "block";
+
+    // Kembalikan ke halaman terakhir yang dikunjungi
+    await restoreLastPageState();
+  } catch (e) {
+    alertEl.innerHTML = `<div class="alert alert-danger">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Masuk";
   }
 }
 
-function submitLogin(e) {
+async function submitRegister(e) {
   e.preventDefault();
-  const username = document.getElementById("login-username").value.trim();
-  const password = document.getElementById("login-password").value;
+  const name = document.getElementById("register-name").value.trim();
+  const email = document.getElementById("register-email").value.trim();
+  const password = document.getElementById("register-password").value;
+  const btn = document.getElementById("btn-register");
+  const alertEl = document.getElementById("alert-login");
 
-  const admin = ADMIN_USERS.find(
-    (u) => u.username === username && u.password === password,
-  );
-
-  if (!admin) {
-    document.getElementById("alert-login").innerHTML =
-      `<div class="alert alert-danger">❌ Username atau password salah!</div>`;
+  // Validasi password minimal 8 karakter
+  if (password.length < 8) {
+    alertEl.innerHTML = `<div class="alert alert-danger">❌ Password minimal 8 karakter</div>`;
     return;
   }
 
-  // Simpan session login
-  currentAdmin = admin;
-  sessionStorage.setItem("adminSession", JSON.stringify(admin));
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Mendaftar...`;
 
-  // Tampilkan nama admin di navbar
-  document.getElementById("navbar-admin-name").innerHTML =
-    `<span class="admin-badge">👤 ${admin.displayName}</span>`;
+  try {
+    const response = await apiFetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
 
-  // Sembunyikan login, tampilkan app
-  document.getElementById("login-screen").style.display = "none";
-  document.getElementById("app-main").style.display = "block";
-
-  // Load dashboard sebagai halaman pertama
-  showPage("dashboard");
-  loadDashboard();
+    // Reset form dan tampilkan pesan sukses
+    document.getElementById("form-register").reset();
+    alertEl.innerHTML = `<div class="alert alert-success">✅ Registrasi berhasil! Silakan login dengan email dan password Anda.</div>`;
+    
+    // Switch ke tab login
+    switchAuthTab("login");
+    
+  } catch (e) {
+    alertEl.innerHTML = `<div class="alert alert-danger">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Daftar";
+  }
 }
 
 function logout() {
   if (!confirm("Yakin ingin keluar?")) return;
   currentAdmin = null;
   sessionStorage.removeItem("adminSession");
+  localStorage.removeItem(LAST_PAGE_KEY);
+  localStorage.removeItem(LAST_SESSION_KEY);
   document.getElementById("app-main").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
   document.getElementById("form-login").reset();
+  document.getElementById("form-register").reset();
   document.getElementById("alert-login").innerHTML = "";
+  document.getElementById("tab-login").classList.add("active");
+  document.getElementById("tab-register").classList.remove("active");
+  document.getElementById("form-login").style.display = "block";
+  document.getElementById("form-register").style.display = "none";
   // Reset state
   currentSessionId = null;
   currentSessionName = "";
 }
 
 // Cek session login saat halaman dimuat
-function checkExistingSession() {
+async function checkExistingSession() {
   const saved = sessionStorage.getItem("adminSession");
   if (saved) {
     try {
       currentAdmin = JSON.parse(saved);
-      document.getElementById("navbar-admin-name").innerHTML =
-        `<span class="admin-badge">👤 ${currentAdmin.displayName}</span>`;
+      
+      // Mengganti emoji 👤 dengan icon 'user' dari Lucide
+      document.getElementById("navbar-admin-name").innerHTML = `
+        <span class="admin-badge" style="display:flex; align-items:center; gap:6px;">
+          <i data-lucide="user" style="width:14px; height:14px;"></i>
+          ${currentAdmin.name}
+        </span>`;
+        
       document.getElementById("login-screen").style.display = "none";
       document.getElementById("app-main").style.display = "block";
-      showPage("dashboard");
-      loadDashboard();
+      
+      await restoreLastPageState();
+      
+      // PENTING: Render icon segera setelah innerHTML diubah
+      lucide.createIcons();
+      
     } catch (e) {
       sessionStorage.removeItem("adminSession");
     }
   }
 }
 
-// ── NAVIGASI HALAMAN ─────────────────────────────────────
-function showPage(pageId) {
-  document
-    .querySelectorAll(".page")
-    .forEach((p) => p.classList.remove("active"));
-  document
-    .querySelectorAll(".nav-link")
-    .forEach((l) => l.classList.remove("active"));
-  const page = document.getElementById("page-" + pageId);
-  if (page) page.classList.add("active");
-  const nav = document.getElementById("nav-" + pageId);
-  if (nav) nav.classList.add("active");
-}
-
 function goToUpload(sessionId, sessionTitle) {
-  currentSessionId = sessionId;
-  currentSessionName = sessionTitle;
+  setCurrentSessionContext(sessionId, sessionTitle);
   document.getElementById("upload-session-name").textContent = sessionTitle;
   document.getElementById("upload-session-id-display").textContent = sessionId;
   loadCandidates(sessionId);
@@ -117,8 +303,7 @@ function goToUpload(sessionId, sessionTitle) {
 }
 
 async function goToRanking(sessionId, sessionTitle) {
-  currentSessionId = sessionId;
-  currentSessionName = sessionTitle;
+  setCurrentSessionContext(sessionId, sessionTitle);
   document.getElementById("ranking-session-name").textContent = sessionTitle;
 
   // Fetch bobot AHP
@@ -132,7 +317,7 @@ async function goToRanking(sessionId, sessionTitle) {
         (d.weight_experience * 100).toFixed(2) + "%";
       document.getElementById("w-skill").textContent =
         (d.weight_skill * 100).toFixed(2) + "%";
-      document.getElementById("w-source").textContent = "AHP ✅";
+      document.getElementById("w-source").textContent = "AHP";
     } else {
       document.getElementById("w-edu").textContent = "30% (default)";
       document.getElementById("w-exp").textContent = "40% (default)";
@@ -310,37 +495,48 @@ function renderSessionGrid() {
           <div class="session-card-title">${s.title}</div>
           <div class="session-card-position">${s.position}</div>
         </div>
-        <!-- Toggle Status Button -->
-        <button
-          class="toggle-status-btn ${s.status}"
-          onclick="event.stopPropagation();toggleSessionStatus('${s.id}','${s.status}','${s.title.replace(/'/g, "\\'")}')"
-          title="${s.status === "active" ? "Klik untuk menutup session" : "Klik untuk mengaktifkan kembali"}">
-          ${s.status === "active" ? "✅ Aktif" : "🔒 Selesai"}
-        </button>
+        
+        <div class="status-badge-container" 
+             onclick="event.stopPropagation();toggleSessionStatus('${s.id}','${s.status}','${s.title.replace(/'/g, "\\'")}')"
+             style="cursor:pointer; display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600; 
+                    ${s.status === 'active' 
+                      ? 'background:#f0fdf4; border:1px solid #bbf7d0; color:#16a34a;' 
+                      : 'background:#fef2f2; border:1px solid #fecaca; color:#dc2626;'};">
+          <i data-lucide="${s.status === 'active' ? 'check-circle' : 'lock'}" style="width:12px; height:12px;"></i>
+          ${s.status === 'active' ? 'Aktif' : 'Selesai'}
+        </div>
       </div>
+
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
         ${s.description || "Tidak ada deskripsi"}
       </div>
+      
       <div class="session-card-meta">
-        <span>${new Date(s.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+        <span style="font-size:11px;">${new Date(s.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
       </div>
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <button class="btn btn-outline btn-sm"
-          onclick="event.stopPropagation();if(currentSessionId){showPage('ahp');loadAHP('${s.id}')}else{currentSessionId='${s.id}';currentSessionName='${s.title.replace(/'/g, "\\'")}';showPage('ahp');loadAHP('${s.id}')}">
-          ⚖️ AHP
+
+      <div style="display:flex;gap:6px;margin-top:14px">
+        <button class="btn btn-outline" 
+          style="display:flex; align-items:center; gap:6px; padding:5px 9px; font-size:11px; height:auto;"
+          onclick="event.stopPropagation();setCurrentSessionContext('${s.id}','${s.title.replace(/'/g, "\\'")}');showPage('ahp');loadAHP('${s.id}')">
+          <i data-lucide="calculator" style="width:12px; height:12px;"></i> AHP
         </button>
-        <button class="btn btn-primary btn-sm"
+        <button class="btn btn-primary" 
+          style="display:flex; align-items:center; gap:4px; padding:4px 8px; font-size:11px; height:auto;"
           onclick="event.stopPropagation();goToUpload('${s.id}','${s.title.replace(/'/g, "\\'")}')">
-          📤 Upload CV
+          <i data-lucide="cloud-upload" style="width:12px; height:12px;"></i> Upload CV
         </button>
-        <button class="btn btn-outline btn-sm"
+        <button class="btn btn-outline" 
+          style="display:flex; align-items:center; gap:4px; padding:4px 8px; font-size:11px; height:auto;"
           onclick="event.stopPropagation();goToRanking('${s.id}','${s.title.replace(/'/g, "\\'")}')">
-          🏆 Ranking
+          <i data-lucide="award" style="width:12px; height:12px;"></i> Ranking
         </button>
       </div>
     </div>`,
     )
     .join("");
+
+lucide.createIcons();
 }
 
 async function toggleSessionStatus(sessionId, currentStatus, sessionTitle) {
@@ -724,7 +920,6 @@ async function loadCandidates(sessionId) {
     if (!candidates || candidates.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">👤</div>
           <div class="empty-state-text">Belum ada kandidat</div>
           <div class="empty-state-hint">Upload CV di atas untuk menambahkan kandidat</div>
         </div>`;
@@ -827,7 +1022,6 @@ async function loadRanking(sessionId) {
     if (!rankings || rankings.length === 0) {
       tableContainer.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">📊</div>
           <div class="empty-state-text">Ranking belum dihitung</div>
           <div class="empty-state-hint">Klik "Hitung Ranking SAW" untuk memulai</div>
         </div>`;
@@ -952,11 +1146,11 @@ function renderPodium(top3, container) {
 }
 
 // ── INISIALISASI ──────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   setupDropZone();
-  checkExistingSession();
+  await checkExistingSession();
 
-  // Default: tampilkan halaman sessions jika sudah login
+  // Default: tampilkan halaman sessions jika belum ada session login
   if (!sessionStorage.getItem("adminSession")) {
     // Halaman login sudah tampil by default
   }

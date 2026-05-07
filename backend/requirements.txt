@@ -9,3 +9,6 @@ pydantic
 pandas
 numpy
 httpx
+bcrypt
+pyjwt
+email-validator

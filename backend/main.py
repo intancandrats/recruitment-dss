@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import get_supabase
 
 # Import semua router
+from routers.auth       import router as auth_router
 from routers.sessions   import router as sessions_router
 from routers.candidates import router as candidates_router
 from routers.ranking    import router as ranking_router
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 # Daftarkan semua router
+app.include_router(auth_router)
 app.include_router(sessions_router)
 app.include_router(candidates_router)
 app.include_router(ranking_router)

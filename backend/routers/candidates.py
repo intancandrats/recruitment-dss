@@ -23,15 +23,29 @@ async def upload_cv(
             detail="Hanya file PDF yang diterima!"
         )
 
-    # Validasi: session harus ada
+    # ── Validasi: session harus ada + ambil job description ──
+    # PERUBAHAN: sekarang kita select "id, position, description" bukan hanya "id"
     session = db.table("recruitment_sessions") \
-        .select("id") \
+        .select("id, position, description") \
         .eq("id", session_id) \
         .single() \
         .execute()
 
     if not session.data:
         raise HTTPException(status_code=404, detail="Session tidak ditemukan")
+
+    # ── Siapkan job description untuk Gemini ──
+    # Gabungkan position title + description supaya konteks lebih lengkap
+    session_position    = session.data.get("position", "") or ""
+    session_description = session.data.get("description", "") or ""
+    
+    if session_position or session_description:
+        job_description = f"Role: {session_position}\n\nJob Requirements:\n{session_description}"
+    else:
+        job_description = None  # tidak ada job description, pakai scoring umum
+
+    print(f"[Candidates] Session position: {session_position}")
+    print(f"[Candidates] Job description available: {bool(job_description)}")
 
     try:
         # ── LANGKAH 1: Upload PDF ke Supabase Storage ──
@@ -48,7 +62,6 @@ async def upload_cv(
             .get_public_url(file_name)
 
         # ── LANGKAH 2: Ekstrak teks dari PDF ──
-        # Import di sini untuk menghindari circular import
         from services.pdf_extractor import extract_text_from_bytes
         cv_text = extract_text_from_bytes(file_bytes)
 
@@ -72,8 +85,9 @@ async def upload_cv(
         candidate_id = candidate["id"]
 
         # ── LANGKAH 4: Scoring dengan Gemini AI ──
+        # PERUBAHAN: sekarang kirim juga job_description ke Gemini!
         from services.gemini_service import score_cv_with_gemini
-        scores = score_cv_with_gemini(cv_text)
+        scores = score_cv_with_gemini(cv_text, job_description=job_description)
 
         # ── LANGKAH 5: Simpan skor ke database ──
         db.table("candidate_scores").insert({
@@ -93,10 +107,11 @@ async def upload_cv(
             "success": True,
             "message": f"CV {name} berhasil diproses dan diskor!",
             "data": {
-                "candidate_id": candidate_id,
-                "name":         name,
-                "cv_url":       cv_url,
-                "scores":       scores
+                "candidate_id":   candidate_id,
+                "name":           name,
+                "cv_url":         cv_url,
+                "scores":         scores,
+                "scored_for_role": session_position  # info role untuk transparansi
             }
         }
 

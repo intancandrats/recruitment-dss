@@ -1,132 +1,192 @@
 import re
 import random
-from config import GEMINI_API_KEY
 import json
+from config import GEMINI_API_KEY
 
-# Gemini API is currently broken, using mock scorer for now
-USE_MOCK_SCORER = True
+# ─── PROMPT: dengan job description ──────────────────────────────────────────
+PROMPT_WITH_JD = """
+You are an expert HR recruiter. Score this CV based on how relevant the candidate is for the specific role below.
 
-PROMPT = """
-You are an HR system that scores CV.
+JOB ROLE & REQUIREMENTS:
+{job_description}
 
-Return ONLY JSON:
-{
-  "name": "candidate name",
-  "education_score": 0-100,
-  "experience_score": 0-100,
-  "skill_score": 0-100
-}
+SCORING RULES:
+- education_score (0-100): How relevant is their educational background for THIS role?
+- experience_score (0-100): How relevant is their work experience for THIS role specifically?
+- skill_score (0-100): How relevant are their skills/tools for THIS role?
 
-CV:
+IMPORTANT:
+- Someone with 10 years experience in a completely different field = LOW experience_score.
+- Someone with 2 years experience directly in this role = HIGH experience_score.
+- Focus on RELEVANCE to the role, not just quantity of experience.
+
+Return ONLY valid JSON, no markdown, no explanation:
+{{
+  "name": "candidate full name from CV",
+  "education_score": <number 0-100>,
+  "experience_score": <number 0-100>,
+  "skill_score": <number 0-100>,
+  "reasoning": "one sentence explaining the fit"
+}}
+
+CV TEXT:
 {cv}
 """
 
-def score_cv_with_gemini(cv_text: str):
-    """Mock scorer that gives varied scores based on CV content"""
+# ─── PROMPT: tanpa job description ───────────────────────────────────────────
+PROMPT_NO_JD = """
+You are an HR system. Score this CV on general quality.
 
-    if USE_MOCK_SCORER:
-        print("[Gemini] Using MOCK scorer (Gemini API broken)")
-        return mock_score_cv(cv_text)
+- education_score (0-100): quality and level of education
+- experience_score (0-100): depth and relevance of work experience
+- skill_score (0-100): breadth of technical and professional skills
 
-    # Original Gemini code (currently broken)
+Return ONLY valid JSON, no markdown, no explanation:
+{{
+  "name": "candidate full name from CV",
+  "education_score": <number 0-100>,
+  "experience_score": <number 0-100>,
+  "skill_score": <number 0-100>,
+  "reasoning": "one sentence general assessment"
+}}
+
+CV TEXT:
+{cv}
+"""
+
+
+def score_cv_with_gemini(cv_text: str, job_description: str = None):
+    """
+    Score a CV using Gemini AI (google-genai SDK).
+    If job_description is provided, scores based on role fit.
+    Falls back to mock scorer if API call fails.
+    """
+
+    if not GEMINI_API_KEY or GEMINI_API_KEY.strip() == "":
+        print("[Gemini] No API key set, using mock scorer")
+        return mock_score_cv(cv_text, job_description)
+
+    # Pilih prompt
+    if job_description and job_description.strip():
+        prompt = PROMPT_WITH_JD \
+            .replace("{job_description}", job_description[:1500]) \
+            .replace("{cv}", cv_text[:3000])
+        print(f"[Gemini] Scoring WITH job description: {job_description[:80]}...")
+    else:
+        prompt = PROMPT_NO_JD.replace("{cv}", cv_text[:3000])
+        print("[Gemini] Scoring WITHOUT job description (general)")
+
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
+        from google import genai  # pip install google-genai
 
-        print("[Gemini] Request ke Gemini...")
-        print(f"[Gemini] CV text length: {len(cv_text)} characters")
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-        # Validasi input
-        if not cv_text or len(cv_text.strip()) < 10:
-            print("[Gemini] ERROR: CV text too short or empty")
-            return get_fallback_scores("CV text too short")
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
 
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(PROMPT.replace("{cv}", cv_text[:3000]))
+        raw_text = response.text.strip()
+        print(f"[Gemini] Raw response: {raw_text[:200]}")
 
-        print("[Gemini] Response received from API")
-        raw_text = response.text
-        print(f"[Gemini] Raw response: {raw_text[:200]}...")
-
-        text = raw_text.strip()
-        start = text.find("{")
-        end = text.rfind("}") + 1
-
+        # Ekstrak JSON dari response
+        start = raw_text.find("{")
+        end   = raw_text.rfind("}") + 1
         if start == -1 or end == 0:
-            print("[Gemini] ERROR: No JSON found in response")
-            return get_fallback_scores("No JSON in response")
+            print("[Gemini] No JSON found, falling back to mock")
+            return mock_score_cv(cv_text, job_description)
 
-        json_text = text[start:end]
-        print(f"[Gemini] Extracted JSON: {json_text}")
+        result = json.loads(raw_text[start:end])
 
-        result = json.loads(json_text)
+        # Validasi field wajib
+        required = ["name", "education_score", "experience_score", "skill_score"]
+        if not all(k in result for k in required):
+            print("[Gemini] Missing fields, falling back to mock")
+            return mock_score_cv(cv_text, job_description)
 
-        if not all(key in result for key in ["name", "education_score", "experience_score", "skill_score"]):
-            print("[Gemini] ERROR: Missing required fields in JSON")
-            return get_fallback_scores("Missing fields")
+        result["education_score"]  = max(0, min(100, int(result["education_score"])))
+        result["experience_score"] = max(0, min(100, int(result["experience_score"])))
+        result["skill_score"]      = max(0, min(100, int(result["skill_score"])))
+        result.setdefault("reasoning", "")
 
-        result["education_score"] = int(result["education_score"])
-        result["experience_score"] = int(result["experience_score"])
-        result["skill_score"] = int(result["skill_score"])
-
-        print(f"[Gemini] SUCCESS: {result['name']} - Edu:{result['education_score']}, Exp:{result['experience_score']}, Skill:{result['skill_score']}")
+        print(f"[Gemini] OK: {result['name']} — Edu:{result['education_score']}, Exp:{result['experience_score']}, Skill:{result['skill_score']}")
+        print(f"[Gemini] Reasoning: {result['reasoning']}")
         return result
 
     except Exception as e:
-        print(f"[Gemini] ERROR: {str(e)}")
-        return get_fallback_scores(str(e))
+        print(f"[Gemini] ERROR: {e}")
+        print("[Gemini] Falling back to mock scorer")
+        return mock_score_cv(cv_text, job_description)
 
-def mock_score_cv(cv_text: str):
-    """Mock CV scorer that analyzes text content and gives varied scores"""
 
-    # Extract name (first line or look for name patterns)
-    lines = cv_text.strip().split('\n')
-    name = "Unknown Candidate"
-    for line in lines[:5]:  # Check first 5 lines
-        line = line.strip()
-        if line and len(line.split()) <= 4 and not any(word in line.lower() for word in ['education', 'experience', 'skill', 'cv', 'resume']):
-            name = line
-            break
+# ─── MOCK SCORER (fallback kalau Gemini gagal) ───────────────────────────────
 
-    # Analyze education keywords
-    education_keywords = ['bachelor', 'master', 'phd', 'degree', 'university', 'college', 'gpa', 'graduated']
-    education_score = min(100, 30 + (cv_text.lower().count('education') * 10))
-    for keyword in education_keywords:
-        if keyword in cv_text.lower():
-            education_score += random.randint(5, 15)
+def mock_score_cv(cv_text: str, job_description: str = None):
+    """Fallback scorer berbasis keyword overlap dengan job description."""
 
-    # Analyze experience keywords
-    experience_keywords = ['experience', 'worked', 'years', 'senior', 'junior', 'developer', 'engineer', 'manager']
-    experience_score = min(100, 25 + (cv_text.lower().count('experience') * 8))
-    for keyword in experience_keywords:
-        if keyword in cv_text.lower():
-            experience_score += random.randint(3, 10)
+    name = _extract_name(cv_text)
 
-    # Analyze skill keywords
-    skill_keywords = ['python', 'javascript', 'java', 'react', 'node', 'sql', 'git', 'docker', 'aws', 'linux']
-    skill_score = min(100, 20 + (len(re.findall(r'\b(?:' + '|'.join(skill_keywords) + r')\b', cv_text.lower())) * 5))
+    if job_description and job_description.strip():
+        jd_words      = set(re.findall(r'\b\w{4,}\b', job_description.lower()))
+        cv_words      = set(re.findall(r'\b\w{4,}\b', cv_text.lower()))
+        overlap       = len(jd_words & cv_words)
+        overlap_pct   = min(overlap / max(len(jd_words), 1), 1.0)
+        base          = int(overlap_pct * 100)
 
-    # Add some randomness to avoid identical scores
-    education_score = max(0, min(100, education_score + random.randint(-10, 10)))
-    experience_score = max(0, min(100, experience_score + random.randint(-10, 10)))
-    skill_score = max(0, min(100, skill_score + random.randint(-10, 10)))
+        edu_kws = ['bachelor', 'master', 'phd', 'degree', 'university', 'college', 'gpa']
+        education_score  = 25 + (base // 3)
+        for kw in edu_kws:
+            if kw in cv_text.lower():
+                education_score += random.randint(4, 10)
 
-    result = {
-        "name": name,
-        "education_score": education_score,
-        "experience_score": experience_score,
-        "skill_score": skill_score
-    }
+        experience_score = 20 + (base // 2)
+        if 'experience' in cv_text.lower():
+            experience_score += random.randint(5, 12)
 
-    print(f"[Mock] Scored CV: {name} - Edu:{education_score}, Exp:{experience_score}, Skill:{skill_score}")
-    return result
+        skill_score = 20 + (base // 2)
 
-def get_fallback_scores(reason: str):
-    """Return fallback scores with random variation to avoid same scores"""
-    import random
+        education_score  = max(0, min(100, education_score  + random.randint(-5, 5)))
+        experience_score = max(0, min(100, experience_score + random.randint(-5, 5)))
+        skill_score      = max(0, min(100, skill_score      + random.randint(-5, 5)))
+        reasoning = f"Mock: {overlap} keyword overlaps ({int(overlap_pct*100)}% relevance to job description)"
+    else:
+        edu_kws = ['bachelor', 'master', 'phd', 'degree', 'university', 'college', 'gpa']
+        education_score = 30 + cv_text.lower().count('education') * 8
+        for kw in edu_kws:
+            if kw in cv_text.lower():
+                education_score += random.randint(5, 12)
+
+        exp_kws = ['experience', 'worked', 'years', 'senior', 'junior', 'developer', 'engineer', 'manager']
+        experience_score = 25 + cv_text.lower().count('experience') * 6
+        for kw in exp_kws:
+            if kw in cv_text.lower():
+                experience_score += random.randint(3, 8)
+
+        skl_kws = ['python', 'javascript', 'java', 'react', 'sql', 'git', 'docker', 'aws', 'figma', 'analytics']
+        skill_score = 20 + len(re.findall(r'\b(?:' + '|'.join(skl_kws) + r')\b', cv_text.lower())) * 5
+
+        education_score  = max(0, min(100, education_score  + random.randint(-8, 8)))
+        experience_score = max(0, min(100, experience_score + random.randint(-8, 8)))
+        skill_score      = max(0, min(100, skill_score      + random.randint(-8, 8)))
+        reasoning = "Mock: general assessment (no job description provided)"
+
+    print(f"[Mock] {name} — Edu:{education_score}, Exp:{experience_score}, Skill:{skill_score}")
     return {
-        "name": f"Fallback ({reason})",
-        "education_score": random.randint(45, 55),
-        "experience_score": random.randint(45, 55),
-        "skill_score": random.randint(35, 45)
+        "name":             name,
+        "education_score":  education_score,
+        "experience_score": experience_score,
+        "skill_score":      skill_score,
+        "reasoning":        reasoning,
     }
+
+
+def _extract_name(cv_text: str) -> str:
+    skip = ['education','experience','skill','cv','resume','curriculum','vitae',
+            'email','phone','address','linkedin','github','objective','summary','profile']
+    for line in cv_text.strip().split('\n')[:8]:
+        line = line.strip()
+        if (line and 2 <= len(line.split()) <= 4
+                and not any(w in line.lower() for w in skip)
+                and not re.search(r'[@\d:/\\|]', line)):
+            return line
+    return "Unknown Candidate"
